@@ -285,7 +285,7 @@ const PlantLibrary = () => {
       </div>
 
       {/* Plant Grid */}
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Recommended for You</h2>
           <Badge variant="secondary" className="bg-primary/10 text-primary">
@@ -293,14 +293,14 @@ const PlantLibrary = () => {
           </Badge>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {uniquePlants.map((plant) => {
             const recommendation = recommendations.find(rec => rec.careData.id === plant.id);
             const compatibility = recommendation ? recommendation.compatibility : Math.floor(Math.random() * 20 + 75);
             
             return (
-              <Card key={plant.id} className="bg-card/80 backdrop-blur-sm shadow-card border border-primary/5 hover:shadow-ar-glow transition-smooth group">
-                <CardContent className="p-4">
+              <Card key={plant.id} className="bg-card/80 backdrop-blur-sm shadow-card border border-primary/5 hover:shadow-ar-glow transition-smooth group h-full">
+                <CardContent className="p-4 h-full">
                   <div className="flex items-start gap-4">
                     {/* Plant Icon */}
                     <div className="text-3xl group-hover:scale-110 transition-smooth">🌱</div>

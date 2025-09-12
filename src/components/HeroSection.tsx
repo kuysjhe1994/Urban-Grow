@@ -40,40 +40,42 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5"></div>
         
         <div className="relative z-10 px-4 pt-16 pb-12">
-          <div className="text-center space-y-6">
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
-                UrbanBloom AR
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Transform your small urban spaces into thriving gardens with augmented reality 
-                and smart climate monitoring
-              </p>
-            </div>
+          <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-10 items-center">
+            <div className="text-center md:text-left space-y-6">
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
+                  UrbanBloom AR
+                </h1>
+                <p className="text-lg text-muted-foreground md:max-w-xl md:mx-0 max-w-2xl mx-auto">
+                  Transform your small urban spaces into thriving gardens with augmented reality 
+                  and smart climate monitoring
+                </p>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-primary shadow-ar-glow hover:shadow-ar-glow transition-smooth"
-                onClick={() => onNavigate('scanner')}
-              >
-                <Camera className="mr-2 h-5 w-5" />
-                Start AR Scanning
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => onNavigate('library')}
-                className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-smooth"
-              >
-                <BookOpen className="mr-2 h-5 w-5" />
-                Explore Plants
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 md:justify-start justify-center">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-primary shadow-ar-glow hover:shadow-ar-glow transition-smooth"
+                  onClick={() => onNavigate('scanner')}
+                >
+                  <Camera className="mr-2 h-5 w-5" />
+                  Start AR Scanning
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => onNavigate('library')}
+                  className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-smooth"
+                >
+                  <BookOpen className="mr-2 h-5 w-5" />
+                  Explore Plants
+                </Button>
+              </div>
             </div>
 
             {/* Hero Image */}
-            <div className="mt-12 relative">
-              <div className="relative mx-auto max-w-sm">
+            <div className="mt-12 md:mt-0 relative">
+              <div className="relative mx-auto md:mx-0 max-w-sm md:max-w-md">
                 <img 
                   src={heroImage} 
                   alt="AR gardening app showing plant monitoring interface" 
@@ -98,7 +100,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
           {features.map((feature, index) => (
             <Card 
               key={index} 

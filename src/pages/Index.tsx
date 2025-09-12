@@ -4,6 +4,7 @@ import FunctionalDashboard from "@/components/FunctionalDashboard";
 import FunctionalARScanner from "@/components/FunctionalARScanner";
 import PlantLibrary from "@/components/PlantLibrary";
 import Navigation from "@/components/Navigation";
+import TopNavigation from "@/components/TopNavigation";
 import SplashScreen from "@/components/SplashScreen";
 import AuthScreen from "@/components/AuthScreen";
 import Profile from "@/components/Profile";
@@ -55,9 +56,12 @@ const Index = () => {
 
   return (
     <div className="relative">
-      {renderContent()}
+      <TopNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="md:pt-4">
+        {renderContent()}
+      </div>
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="h-20"></div> {/* Spacer for bottom navigation */}
+      <div className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom))]"></div>
     </div>
   );
 };
