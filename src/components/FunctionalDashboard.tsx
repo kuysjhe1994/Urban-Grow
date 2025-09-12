@@ -428,7 +428,7 @@ const FunctionalDashboard = () => {
       </div>
 
       {/* Live Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-6xl mx-auto">
         <Card className="bg-gradient-card shadow-card border-primary/10">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -479,7 +479,7 @@ const FunctionalDashboard = () => {
       </div>
 
       {/* Garden Zones */}
-      <div>
+      <div className="max-w-6xl mx-auto w-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Garden Zones</h2>
           <Button onClick={addNewZone} variant="hero" size="sm">
@@ -503,10 +503,10 @@ const FunctionalDashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {gardenZones.map((zone) => (
-              <Card key={zone.id} className="bg-card/80 backdrop-blur-sm shadow-soft border border-primary/5">
-                <CardContent className="p-4">
+              <Card key={zone.id} className="bg-card/80 backdrop-blur-sm shadow-soft border border-primary/5 h-full">
+                <CardContent className="p-4 h-full">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-medium text-card-foreground">{zone.name}</h3>
@@ -655,6 +655,17 @@ const FunctionalDashboard = () => {
           </CardContent>
         </Card>
       )}
+      {/* Floating Action (md+) */}
+      <div className="hidden md:block fixed bottom-8 right-8">
+        <Button 
+          size="lg" 
+          className="h-14 w-14 rounded-full bg-gradient-primary shadow-ar-glow border-2 border-primary-glow/20"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Start AR Scan"
+        >
+          <Camera className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 };
