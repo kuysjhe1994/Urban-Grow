@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Urban-Grow',
   webDir: 'dist',
   server: {
-    url: 'https://your-app-domain.example.com',
+    url: 'https://urban-grow-khaki.vercel.app',
     cleartext: false,
   }
 };
