@@ -2,7 +2,10 @@
   "appId": "com.urbangrow.app",
   "appName": "bloom-ar-sense",
   "webDir": "dist",
-  "server": {},
+  "server": {
+    "url": "https://urban-grow-khaki.vercel.app",
+    "cleartext": false
+  },
 
   "plugins": {
     "Camera": {
