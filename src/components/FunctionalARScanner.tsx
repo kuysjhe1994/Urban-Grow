@@ -27,6 +27,8 @@ const FunctionalARScanner = () => {
   const [spacePlantRecommendations, setSpacePlantRecommendations] = useState<PlantCareData[]>([]);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [isConfirmSpaceOpen, setIsConfirmSpaceOpen] = useState(false);
+  const [confirmSpaceLoading, setConfirmSpaceLoading] = useState(false);
   const allowedPlants = ['tomato','basil','lettuce','eggplant','pepper'];
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -145,47 +147,8 @@ const FunctionalARScanner = () => {
     if (scanMode === 'space') {
       try {
         await startSpaceScanning();
-        
-        // After space scan completes, save as Garden Zone
-        if (spaceData) {
-          try {
-            const { data: authUser } = await supabase.auth.getUser();
-            if (authUser.user) {
-              // Generate zone name based on surface type and location
-              const zoneName = `${spaceData.surfaceType.charAt(0).toUpperCase() + spaceData.surfaceType.slice(1)} Zone`;
-              
-              const { error: zoneError } = await supabase
-                .from('garden_zones')
-                .insert({
-                  user_id: authUser.user.id,
-                  name: zoneName,
-                  temperature: currentSensorData.temperature,
-                  humidity: currentSensorData.humidity,
-                  soil_moisture: currentSensorData.soilMoisture,
-                  light_hours: currentSensorData.lightHours,
-                  plants_count: 0,
-                  status: spaceData.suitability === 'excellent' ? 'excellent' : 
-                          spaceData.suitability === 'good' ? 'good' : 'needs_attention'
-                });
-              
-              if (zoneError) {
-                console.error('Failed to save garden zone:', zoneError);
-                toast({
-                  variant: "destructive",
-                  title: "Save Error",
-                  description: "Space scanned but couldn't save as Garden Zone. Please try again."
-                });
-              } else {
-                toast({
-                  title: "Garden Zone Created",
-                  description: `${zoneName} saved and will appear in Monitor Screen`
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Error saving garden zone:', error);
-          }
-        }
+        // After space scan completes, ask for confirmation before saving
+        if (spaceData) setIsConfirmSpaceOpen(true);
       } catch (error) {
         console.error('Space scanning error:', error);
       }
@@ -280,6 +243,59 @@ const FunctionalARScanner = () => {
       console.error('Confirm add failed', e);
       setConfirmLoading(false);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add plant to library' });
+    }
+  };
+
+  const confirmAddSpaceZone = async () => {
+    if (!spaceData) {
+      setIsConfirmSpaceOpen(false);
+      return;
+    }
+    try {
+      setConfirmSpaceLoading(true);
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) {
+        toast({ variant: 'destructive', title: 'Not signed in', description: 'Please sign in to add a garden zone.' });
+        setConfirmSpaceLoading(false);
+        return;
+      }
+
+      const zoneName = `${spaceData.surfaceType.charAt(0).toUpperCase() + spaceData.surfaceType.slice(1)} Zone`;
+      const nowIso = new Date().toISOString();
+      const { error: zoneError } = await supabase
+        .from('garden_zones')
+        .insert({
+          user_id: authUser.user.id,
+          name: zoneName,
+          temperature: currentSensorData.temperature,
+          humidity: currentSensorData.humidity,
+          soil_moisture: currentSensorData.soilMoisture,
+          light_hours: currentSensorData.lightHours,
+          plants_count: 0,
+          status: spaceData.suitability === 'excellent' ? 'Healthy' : spaceData.suitability === 'good' ? 'Healthy' : 'Needs Water',
+          created_at: nowIso,
+          updated_at: nowIso,
+          last_watered: null
+        });
+
+      if (zoneError) {
+        console.error('Failed to save garden zone:', zoneError);
+        toast({ variant: 'destructive', title: 'Save Error', description: "Couldn't save zone. Please try again." });
+        setConfirmSpaceLoading(false);
+        return;
+      }
+
+      toast({ title: 'Garden Zone Created', description: `${zoneName} added to Monitoring` });
+      setIsConfirmSpaceOpen(false);
+      setConfirmSpaceLoading(false);
+      // Navigate to Monitoring
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'monitoring' } }))
+      }, 250);
+    } catch (e) {
+      console.error('Confirm add space failed', e);
+      setConfirmSpaceLoading(false);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add zone' });
     }
   };
 
@@ -699,6 +715,44 @@ const FunctionalARScanner = () => {
             </Button>
             <Button onClick={confirmAddToLibrary} disabled={confirmLoading} className="bg-gradient-primary">
               {confirmLoading ? 'Adding…' : 'Add to Library'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Add Space Zone Modal */}
+      <Dialog open={isConfirmSpaceOpen} onOpenChange={setIsConfirmSpaceOpen}>
+        <DialogContent className="bg-gradient-card backdrop-blur-sm border border-primary/20">
+          <DialogHeader>
+            <DialogTitle>Add Zone to Monitoring?</DialogTitle>
+            <DialogDescription>
+              {spaceData ? `Detected a ${spaceData.surfaceType} space of ~${spaceData.area}m². Add as a garden zone?` : 'Add detected space as a garden zone?'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-muted-foreground">Temperature</p>
+              <p className="font-medium">{currentSensorData.temperature.toFixed(1)}°C</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Humidity</p>
+              <p className="font-medium">{currentSensorData.humidity.toFixed(0)}%</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Soil Moisture</p>
+              <p className="font-medium">{currentSensorData.soilMoisture.toFixed(0)}%</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Light Hours</p>
+              <p className="font-medium">{currentSensorData.lightHours.toFixed(1)}h</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmSpaceOpen(false)} disabled={confirmSpaceLoading}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAddSpaceZone} disabled={confirmSpaceLoading} className="bg-gradient-primary">
+              {confirmSpaceLoading ? 'Adding…' : 'Add Zone'}
             </Button>
           </DialogFooter>
         </DialogContent>
