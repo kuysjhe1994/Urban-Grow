@@ -293,6 +293,14 @@ const FunctionalARScanner = () => {
         title: "Plant Analysis Complete",
         description: `Detected ${detected} and saved to Plant Library!`
       });
+
+      // Navigate to Plant Library then Monitoring
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'library' } }))
+      }, 400);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'monitoring' } }))
+      }, 1200);
     }, 3000);
   };
 
