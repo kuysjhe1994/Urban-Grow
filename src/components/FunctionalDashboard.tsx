@@ -283,15 +283,28 @@ const FunctionalDashboard = () => {
 
   const addNewZone = async () => {
     try {
+      if (!user?.id) {
+        toast({
+          variant: "destructive",
+          title: "Not signed in",
+          description: "Please sign in to add a garden zone."
+        });
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
       const newZone = {
-        user_id: user?.id,
+        user_id: user.id,
         name: `Zone ${gardenZones.length + 1}`,
         plants_count: 0,
-        temperature: 0,
-        humidity: 0,
-        soil_moisture: 0,
-        light_hours: 0,
-        status: "Healthy" as const
+        temperature: 22,
+        humidity: 50,
+        soil_moisture: 65,
+        light_hours: 6,
+        status: "Healthy" as const,
+        created_at: nowIso,
+        updated_at: nowIso,
+        last_watered: null
       };
 
       const { data, error } = await supabase
@@ -306,7 +319,13 @@ const FunctionalDashboard = () => {
         title: "New Zone Added",
         description: "Connect your sensors to start monitoring!"
       });
+
+      if (data) {
+        // Optimistically update local state
+        setGardenZones(prev => [data as unknown as GardenZone, ...prev]);
+      }
     } catch (error: any) {
+      console.error('Add zone failed:', error);
       toast({
         variant: "destructive",
         title: "Error",

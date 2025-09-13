@@ -15,6 +15,17 @@ const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
   const { user, loading } = useAuth();
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ tab: string }>
+      if (custom.detail?.tab) {
+        setActiveTab(custom.detail.tab)
+      }
+    }
+    window.addEventListener('app:navigate', handler as EventListener)
+    return () => window.removeEventListener('app:navigate', handler as EventListener)
+  }, [])
+
   const renderContent = () => {
     switch (activeTab) {
       case "home":
