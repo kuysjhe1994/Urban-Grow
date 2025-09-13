@@ -5,6 +5,7 @@ import { Camera, Zap, Thermometer, Droplets, Sun, AlertCircle, Save, History, Ma
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useARScans } from "@/hooks/useARScans";
 import { usePlantCare } from "@/hooks/usePlantCare";
@@ -24,6 +25,8 @@ const FunctionalARScanner = () => {
   const [isPlantModalOpen, setIsPlantModalOpen] = useState(false);
   const [selectedPlantCare, setSelectedPlantCare] = useState<PlantCareData | null>(null);
   const [spacePlantRecommendations, setSpacePlantRecommendations] = useState<PlantCareData[]>([]);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const allowedPlants = ['tomato','basil','lettuce','eggplant','pepper'];
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -197,63 +200,9 @@ const FunctionalARScanner = () => {
       const possiblePlants = ['Tomato', 'Basil', 'Lettuce', 'Eggplant', 'Pepper'];
       const detected = possiblePlants[Math.floor(Math.random() * possiblePlants.length)];
       setDetectedPlant(detected);
-      
-      // Auto-save detected plant to Plant Library with "Scanned Plants" tag
-      try {
-        let plant = getPlantByName(detected);
-        if (!plant) {
-          const { error } = await supabase.from('plant_care_data').insert({
-            plant_name: detected,
-            care_tips: [`Scanned plant - ${detected}`, 'Recently detected via AR scan'],
-            common_issues: [`Monitor ${detected.toLowerCase()} for common growing issues`]
-          });
-          if (error) {
-            console.error('Failed to save plant to library:', error);
-            toast({ variant: 'destructive', title: 'Save failed', description: 'Sign in to save scanned plants to your library.' });
-          } else {
-            await fetchPlants();
-            plant = getPlantByName(detected);
-            toast({
-              title: "Plant Added to Library",
-              description: `${detected} saved under "Scanned Plants" in Plant Library`
-            });
-          }
-        }
-        
-        // Suggest if plant can grow in scanned spaces
-        const { data: authUser } = await supabase.auth.getUser();
-        if (authUser.user) {
-          const { data: zones } = await supabase
-            .from('garden_zones')
-            .select('*')
-            .eq('user_id', authUser.user.id);
-          
-          if (zones && zones.length > 0) {
-            const suitableZones = zones.filter(zone => {
-              // Check compatibility based on environmental conditions
-              const tempOk = zone.temperature >= 18 && zone.temperature <= 27;
-              const humidityOk = zone.humidity >= 40 && zone.humidity <= 60;
-              const lightOk = zone.light_hours >= 4;
-              return tempOk && humidityOk && lightOk;
-            });
-            
-            if (suitableZones.length > 0) {
-              toast({
-                title: "Zone Compatibility",
-                description: `${detected} can grow in ${suitableZones.length} of your garden zones!`
-              });
-            }
-          }
-        }
-        
-        if (plant) {
-          setSelectedPlantCare(plant);
-          setIsPlantModalOpen(true);
-        }
-      } catch (e) {
-        console.error('Add to library failed', e);
-      }
-      
+      // Open confirmation modal before saving to library
+      setIsConfirmOpen(true);
+
       // Generate plant recommendations based on detected plant and conditions
       const recsAll = getRecommendationsForConditions(currentSensorData);
       const recommendations = recsAll.filter(r => allowedPlants.some(a => r.name.toLowerCase().includes(a)));
@@ -272,11 +221,37 @@ const FunctionalARScanner = () => {
         setPlantRecommendations(recommendations);
       }
       
-      // Save scan data with real climate data
+      // Don't save or navigate yet; wait for user confirmation
+    }, 3000);
+  };
+
+  const confirmAddToLibrary = async () => {
+    if (!detectedPlant) return;
+    try {
+      setConfirmLoading(true);
+      // Save plant to library if not present
+      let plant = getPlantByName(detectedPlant);
+      if (!plant) {
+        const { error } = await supabase.from('plant_care_data').insert({
+          plant_name: detectedPlant,
+          care_tips: [`Scanned plant - ${detectedPlant}`, 'Recently detected via AR scan'],
+          common_issues: [`Monitor ${detectedPlant.toLowerCase()} for common growing issues`]
+        });
+        if (error) {
+          console.error('Failed to save plant to library:', error);
+          toast({ variant: 'destructive', title: 'Save failed', description: 'Sign in to save scanned plants to your library.' });
+          setConfirmLoading(false);
+          return;
+        }
+        await fetchPlants();
+        plant = getPlantByName(detectedPlant);
+      }
+
+      // Optionally save the scan record
       await saveScan({
         image_url: capturedImage,
-        detected_plant_name: detected,
-        confidence_score: Math.random() * 0.3 + 0.7, // 70-100% confidence
+        detected_plant_name: detectedPlant,
+        confidence_score: Math.random() * 0.3 + 0.7,
         environmental_data: {
           temperature: currentSensorData.temperature,
           humidity: currentSensorData.humidity,
@@ -285,20 +260,27 @@ const FunctionalARScanner = () => {
           weather: climateData?.weather || 'Unknown',
           location: climateData?.location || { city: 'Unknown', country: 'Unknown' }
         },
-        recommendations: recommendations.map(r => `${r.name}: ${r.reason}`),
+        recommendations: plantRecommendations.map(r => `${r.name}: ${r.reason}`),
         location_data: climateData?.location.coordinates || { latitude: 0, longitude: 0 }
       });
-      
+
       toast({
-        title: "Plant Analysis Complete",
-        description: `Detected ${detected} and saved to Plant Library!`
+        title: "Plant Added to Library",
+        description: `${detectedPlant} saved to your library`
       });
 
-      // Navigate directly to Plant Library so the user can review the scanned plant
+      setIsConfirmOpen(false);
+      setConfirmLoading(false);
+
+      // Navigate to Plant Library
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'library' } }))
-      }, 400);
-    }, 3000);
+      }, 250);
+    } catch (e) {
+      console.error('Confirm add failed', e);
+      setConfirmLoading(false);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add plant to library' });
+    }
   };
 
   const resetScanner = () => {
@@ -696,6 +678,31 @@ const FunctionalARScanner = () => {
         isOpen={isPlantModalOpen}
         onClose={() => setIsPlantModalOpen(false)}
       />
+
+      {/* Confirm Add to Library Modal */}
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="bg-gradient-card backdrop-blur-sm border border-primary/20">
+          <DialogHeader>
+            <DialogTitle>Add to Library?</DialogTitle>
+            <DialogDescription>
+              {detectedPlant ? `We detected ${detectedPlant}. Add this plant to your library?` : 'Add detected plant to your library?'}
+            </DialogDescription>
+          </DialogHeader>
+          {capturedImage && (
+            <div className="rounded-lg overflow-hidden">
+              <img src={capturedImage} alt="Detected" className="w-full h-40 object-cover" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmOpen(false)} disabled={confirmLoading}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAddToLibrary} disabled={confirmLoading} className="bg-gradient-primary">
+              {confirmLoading ? 'Adding…' : 'Add to Library'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
