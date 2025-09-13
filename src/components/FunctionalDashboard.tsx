@@ -283,7 +283,10 @@ const FunctionalDashboard = () => {
 
   const addNewZone = async () => {
     try {
-      if (!user?.id) {
+      // Re-check auth with Supabase to avoid stale user
+      const { data: authUser } = await supabase.auth.getUser();
+      const userId = authUser.user?.id || user?.id;
+      if (!userId) {
         toast({
           variant: "destructive",
           title: "Not signed in",
@@ -294,7 +297,7 @@ const FunctionalDashboard = () => {
 
       const nowIso = new Date().toISOString();
       const newZone = {
-        user_id: user.id,
+        user_id: userId,
         name: `Zone ${gardenZones.length + 1}`,
         plants_count: 0,
         temperature: 22,
@@ -328,8 +331,8 @@ const FunctionalDashboard = () => {
       console.error('Add zone failed:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to add new zone"
+        title: "Failed to add zone",
+        description: error?.message || "Failed to add new zone"
       });
     }
   };
