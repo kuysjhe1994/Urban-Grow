@@ -294,13 +294,10 @@ const FunctionalARScanner = () => {
         description: `Detected ${detected} and saved to Plant Library!`
       });
 
-      // Navigate to Plant Library then Monitoring
+      // Navigate directly to Plant Library so the user can review the scanned plant
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'library' } }))
       }, 400);
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('app:navigate', { detail: { tab: 'monitoring' } }))
-      }, 1200);
     }, 3000);
   };
 
